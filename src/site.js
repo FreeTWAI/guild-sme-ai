@@ -5,11 +5,12 @@
   const embedded = window.parent !== window;
   let connection = null;
   let lastHeight = 0;
+  const mainElement = document.querySelector('main');
   function send(message) {
     if (connection) window.parent.postMessage({protocol, channel: connection.channel, guildKey: workspace.guild_key, ...message}, connection.origin);
   }
   function resize() {
-    const height = Math.max(240, Math.min(1600, Math.ceil(document.querySelector('main').getBoundingClientRect().height + 32)));
+    const height = Math.max(240, Math.min(1600, Math.ceil(mainElement.getBoundingClientRect().height + 32)));
     if (height !== lastHeight) {lastHeight = height; send({type: 'resize', height});}
   }
   if (embedded) {
@@ -22,7 +23,9 @@
       if (event.source !== window.parent || !['https://freetwai.com', 'https://staging.freetwai.com'].includes(event.origin)
         && !/^http:\/\/(?:127\.0\.0\.1|localhost):\d{1,5}$/.test(event.origin)) return;
       const value = event.data;
-      if (!value || typeof value !== 'object' || Array.isArray(value) || Object.keys(value).sort().join(',') !== 'actions,channel,guildKey,protocol,theme,type'
+      if (!value || typeof value !== 'object' || Array.isArray(value) || Object.keys(value).length !== 6
+        || !Object.hasOwn(value, 'actions') || !Object.hasOwn(value, 'channel') || !Object.hasOwn(value, 'guildKey')
+        || !Object.hasOwn(value, 'protocol') || !Object.hasOwn(value, 'theme') || !Object.hasOwn(value, 'type')
         || value.protocol !== protocol || value.type !== 'init' || value.guildKey !== workspace.guild_key
         || typeof value.channel !== 'string' || !/^[a-f0-9-]{36}$/.test(value.channel)
         || !['light', 'night', 'versefolk'].includes(value.theme)
@@ -38,7 +41,7 @@
       event.preventDefault();
       if (event.isTrusted && connection?.actions.includes(link.dataset.action)) send({type: 'navigate', action: link.dataset.action});
     });
-    new ResizeObserver(resize).observe(document.querySelector('main'));
+    if (mainElement) new ResizeObserver(resize).observe(mainElement);
   }
   document.querySelector('#release').textContent = `版本 ${sourceSha.slice(0, 8)}`;
 })();
